@@ -17,13 +17,16 @@ from utils.text_processing import padronizar_reu, padronizar_competencia, catego
 from utils.calculations import calcular_idade_processos, calcular_idade_clientes
 from components.filters import aplicar_filtros_temporais
 
-
+# Importar o módulo de visão geral
 from pages.analises.Analise_visao_geral import visao_geral
 from pages.analises.analise_visao_temporal import analise_temporal
 from pages.analises.analise_visao_Réus import analise_reus_procedencia
 from pages.analises.analise_cliente import analise_cliente
 from pages.analises.analise_profissões import analise_profissoes
 from pages.analises.analise_prospectores import analise_prospectors
+st.set_page_config(layout='wide')
+
+
 # =====================================
 # CONFIGURAÇÃO DE FILTRO DE ANO
 # =====================================
@@ -33,17 +36,19 @@ from pages.analises.analise_prospectores import analise_prospectors
 FILTRO_ANO_ATIVO = False
 ANO_FILTRO = None
 
-# OPÇÃO 2: VERSÃO APENAS 2025 
+# OPÇÃO 2: VERSÃO APENAS 2025
+
 # FILTRO_ANO_ATIVO = True
 # ANO_FILTRO = 2025
 
 # =====================================
 
+
 def aplicar_filtro_configurado(df):
     """Aplica filtro de ano baseado na configuração acima"""
     if not FILTRO_ANO_ATIVO or ANO_FILTRO is None:
         return df
-    
+
     if 'data_convertida' in df.columns:
         df_filtrado = df[df['data_convertida'].dt.year == ANO_FILTRO].copy()
         return df_filtrado
@@ -52,7 +57,7 @@ def aplicar_filtro_configurado(df):
         df['data_convertida'] = pd.to_datetime(df['data'], errors='coerce')
         df_filtrado = df[df['data_convertida'].dt.year == ANO_FILTRO].copy()
         return df_filtrado
-    
+
     return df
 
 
@@ -125,7 +130,6 @@ def preparar_dados_analise(df_sergipe):
             df_analise['tipoPrincipal'] = 'OUTROS'
 
     return df_analise
-
 
 
 def mostrar_kpis_principais(df_analise):
@@ -232,8 +236,9 @@ def mostrar_kpis_principais(df_analise):
             </div>
         """, unsafe_allow_html=True)
 
-def pagina_visao_analitica():
-    """Página de análise detalhada dos processos"""
+
+def main():
+    """Função principal"""
     
     # CSS customizado para reduzir espaços
     st.markdown("""
@@ -254,7 +259,7 @@ def pagina_visao_analitica():
             f"<p style='font-size: 18px; margin-top: -3rem !important;'>Análises detalhadas - Ano {ANO_FILTRO}</p>", unsafe_allow_html=True)
     else:
         st.markdown("<p style='font-size: 18px; margin-top: -3rem !important;'>Análises detalhadas sobre perfil, idade e características dos processos</p>", unsafe_allow_html=True)
-    
+
     # Carregar e preparar dados
     df = carregar_e_processar_dados()
     if df is None:
@@ -283,8 +288,7 @@ def pagina_visao_analitica():
     else:
         # Mostrar filtros normais
         df_filtrado = aplicar_filtros_temporais(df_analise)
-    
-    
+
     # KPIs
     mostrar_kpis_principais(df_filtrado)
     
@@ -300,7 +304,6 @@ def pagina_visao_analitica():
         "💼 Profissões",
         "🎯 Prospectores"
     ])
-
 
     with tab1:
         visao_geral(df_filtrado, aplicar_filtro_configurado)
@@ -319,3 +322,6 @@ def pagina_visao_analitica():
     
     with tab6:
         analise_prospectors(df_filtrado, aplicar_filtro_configurado)
+
+if __name__ == "__main__":
+    main()

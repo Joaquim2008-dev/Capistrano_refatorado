@@ -1,0 +1,195 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+import sys
+from pathlib import Path
+
+def analise_prospectors(df_analise, aplicar_filtro_configurado):
+    """Análise específica de prospectores - COM FILTRO APLICADO"""
+    # APLICAR FILTRO AQUI TAMBÉM
+    df_analise = aplicar_filtro_configurado(df_analise)
+
+        
+    if 'prospector' not in df_analise.columns:
+        st.warning("Coluna 'prospector' não encontrada")
+        return
+    
+    if 'data_convertida' not in df_analise.columns:
+        st.warning("Dados de data não disponíveis para análise temporal")
+        return
+    
+    # Filtrar últimos 12 meses para calcular KPIs
+    hoje = pd.Timestamp.now()
+    doze_meses_atras = hoje - pd.DateOffset(months=12)
+    df_12_meses = df_analise[df_analise['data_convertida'] >= doze_meses_atras]
+    
+    # Calcular estatísticas do período
+    if len(df_12_meses) > 0:
+        total_12_meses = len(df_12_meses)
+        com_prospector_12m = df_12_meses['prospector'].notna().sum()
+        percentual_prospector_12m = (com_prospector_12m / total_12_meses * 100) if total_12_meses > 0 else 0
+        
+        # KPIs formatados horizontalmente
+        st.markdown(f"""
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
+                    color:#7b6654;font-size:14px;">
+            <div><span>Total 12 meses:</span> <span style="color:#d35400;font-weight:700;">{total_12_meses:,}</span></div>
+            <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Com prospector: <span style="color:#d35400;font-weight:700;">{com_prospector_12m:,}</span></div>
+            <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">% com prospector: <span style="color:#d35400;font-weight:700;">{percentual_prospector_12m:.1f}%</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("Nenhum processo nos últimos 12 meses")
+        return
+    
+    col_grafico, col_ranking = st.columns(2)
+    
+    with col_grafico:
+        st.markdown("**Proporção de Ações por Mês (Últimos 12 meses)**")
+        
+        if len(df_12_meses) > 0:
+            # Criar coluna indicando se tem prospector
+            df_12_meses = df_12_meses.copy()
+            df_12_meses['tem_prospector'] = df_12_meses['prospector'].notna()
+            df_12_meses['prospector_categoria'] = df_12_meses['tem_prospector'].map({
+                True: 'Com Prospector',
+                False: 'Sem Prospector'
+            })
+            
+            # Agrupar por mês e categoria
+            df_12_meses['mes_ano'] = df_12_meses['data_convertida'].dt.to_period('M')
+            agrupado = df_12_meses.groupby(['mes_ano', 'prospector_categoria']).size().reset_index(name='quantidade')
+            agrupado['mes_ano_str'] = agrupado['mes_ano'].astype(str)
+            
+            # Calcular percentuais manualmente para cada mês
+            totais_por_mes = agrupado.groupby('mes_ano_str')['quantidade'].sum().reset_index()
+            totais_por_mes.columns = ['mes_ano_str', 'total_mes']
+            
+            agrupado = agrupado.merge(totais_por_mes, on='mes_ano_str')
+            agrupado['percentual'] = (agrupado['quantidade'] / agrupado['total_mes'] * 100)
+            
+            # Criar gráfico de barras empilhadas normalizado (CORREÇÃO)
+            fig_prospector = px.bar(
+                agrupado,
+                x='mes_ano_str',
+                y='percentual',  # Usar percentual já calculado
+                color='prospector_categoria',
+                color_discrete_map={
+                    'Com Prospector': '#2E8B57',    # Verde escuro
+                    'Sem Prospector': '#CD5C5C'      # Vermelho claro
+                }
+                # REMOVER barnorm que não existe
+            )
+            
+            fig_prospector.update_layout(
+                title="",
+                xaxis_title="",
+                yaxis_title="",
+                height=350,
+                margin=dict(t=20, b=20, l=20, r=20),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ),
+                yaxis=dict(
+                    showticklabels=False,
+                    range=[0, 100]
+                )
+            )
+            
+            # Adicionar percentuais nas barras
+            fig_prospector.update_traces(
+                texttemplate='%{y:.1f}%',
+                textposition='inside'
+            )
+            
+            st.plotly_chart(fig_prospector, use_container_width=True, key="grafico_prospectors_temporal")
+        
+        else:
+            st.warning("Nenhum processo nos últimos 12 meses")
+    
+    with col_ranking:
+        st.markdown("**Top 5 Prospectors**")
+        
+        # Filtros com radio buttons
+        periodo_filtro = st.radio(
+            "Período de análise:",
+            ["Geral", "Ano atual", "Mês atual"],
+            index=0,
+            help="Selecione o período para o ranking",
+            horizontal=True,
+            key="radio_periodo_prospectors_unique_key_2024"  # CHAVE BEM ÚNICA
+        )
+        
+        # Aplicar filtro baseado na seleção
+        if periodo_filtro == "Geral":
+            df_filtrado_prospector = df_analise
+            periodo_texto = "todos os dados"
+        elif periodo_filtro == "Ano atual":
+            ano_atual = pd.Timestamp.now().year
+            df_filtrado_prospector = df_analise[df_analise['data_convertida'].dt.year == ano_atual]
+            periodo_texto = f"ano {ano_atual}"
+        else:  # Mês atual
+            hoje = pd.Timestamp.now()
+            primeiro_dia_mes = hoje.replace(day=1)
+            df_filtrado_prospector = df_analise[df_analise['data_convertida'] >= primeiro_dia_mes]
+            periodo_texto = f"{hoje.strftime('%B/%Y')}"
+        
+        # Calcular top 5 prospectors
+        prospectors_validos = df_filtrado_prospector['prospector'].dropna()
+        
+        if len(prospectors_validos) > 0:
+            top_prospectors = prospectors_validos.value_counts().head(5)
+            total_com_prospector = len(prospectors_validos)
+            
+            st.markdown(f"**Ranking ({periodo_texto}):**")
+
+            st.markdown("""
+            <style>
+            .prospector-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid #eee;
+            }
+            .prospector-rank { 
+                width: 30px; 
+                font-weight: bold; 
+            }
+            .prospector-name { 
+                flex: 1; 
+                max-width: 2000px; 
+                word-wrap: break-word;
+                padding-right: 10px;
+            }
+            .prospector-count { 
+                width: 60px; 
+                text-align: center; 
+            }
+            .prospector-perc { 
+                width: 50px; 
+                text-align: center; 
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            for i, (prospector, count) in enumerate(top_prospectors.items(), 1):
+                percentual = (count / total_com_prospector * 100)
+                
+                st.markdown(f"""
+                <div class="prospector-item">
+                    <div class="prospector-rank">{i}º</div>
+                    <div class="prospector-name">{prospector}</div>
+                    <div class="prospector-count">{count}</div>
+                    <div class="prospector-perc">{percentual:.1f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+                        
+        else:
+            st.warning(f"Nenhum prospector encontrado para {periodo_texto}")
