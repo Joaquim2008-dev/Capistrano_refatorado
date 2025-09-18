@@ -1,0 +1,171 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import numpy as np
+import base64
+
+def analise_cliente(df_analise):
+    """
+    Separa a lógica da aba "Perfil dos Clientes".
+    Recebe df_analise já preparado (colunas como 'idade_cliente_anos', 'sexo', etc).
+    """
+
+    # resumo horizontal dinâmico (substitui as tabelas concentração etária / resumo)
+
+    def encode_image(file):
+        try:
+            with open(file, "rb") as f:
+                return "data:image/png;base64," + base64.b64encode(f.read()).decode()
+        except FileNotFoundError:
+            return None
+
+    if 'idade_cliente_anos' in df_analise.columns:
+        idades_line = df_analise['idade_cliente_anos'].dropna()
+    else:
+        idades_line = pd.Series(dtype=float)
+
+    if len(idades_line) > 0:
+        p10 = int(idades_line.quantile(0.10))
+        p25 = int(idades_line.quantile(0.25))
+        p50 = int(idades_line.quantile(0.50))
+        p75 = int(idades_line.quantile(0.75))
+        p90 = int(idades_line.quantile(0.90))
+
+        # faixa mais comum aproximada em bins de 5 anos -> formatar "A a B"
+        faixa_limpa = ""
+        try:
+            bins = range(int(idades_line.min()), int(idades_line.max()) + 5, 5)
+            idades_faixas = pd.cut(idades_line, bins=bins)
+            modo = idades_faixas.mode()
+            if len(modo) > 0:
+                faixa_str = str(modo[0])
+                # faixa_str vem algo como '(70, 75]' ou '[70, 75)'
+                faixa_limpa = faixa_str.replace('(', '').replace(')', '').replace('[', '').replace(']', '').replace(',', ' a')
+        except Exception:
+            faixa_limpa = ""
+
+        st.markdown(f"""
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
+                        color:#7b6654;font-size:14px;">
+                <div><span style="color:#d35400;font-weight:700;">50%</span> dos clientes estão entre <span style="color:#d35400;font-weight:700;">{p25}</span> e <span style="color:#d35400;font-weight:700;">{p75}</span> anos</div>
+                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">
+                    <span style="color:#d35400;font-weight:700;">80%</span> dos clientes estão entre <span style="color:#d35400;font-weight:700;">{p10}</span> e <span style="color:#d35400;font-weight:700;">{p90}</span> anos
+                </div>
+                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Mediana: <span style="color:#d35400;font-weight:700;">{p50} anos</span></div>
+                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Faixa mais comum: <span style="color:#d35400;font-weight:700;">{faixa_limpa}</span></div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Removidos os 4 cards azuis conforme solicitado — segue a lógica restante sem os cards.
+    else:
+        st.markdown("""
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
+                        color:#7b6654;font-size:14px;">
+                <div>Sem dados de idade disponíveis</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    col_idade, col_sexo, col_stats = st.columns([2, 2, 1])
+
+    with col_idade:
+        st.markdown(" Distribuição de Idades")
+        if 'idade_cliente_anos' in df_analise.columns:
+            idades_validas = df_analise['idade_cliente_anos'].dropna()
+
+            if len(idades_validas) > 0:
+                fig_idades = px.histogram(
+                    x=idades_validas,
+                    nbins=20,
+                    color_discrete_sequence=['steelblue']
+                )
+
+                fig_idades.update_traces(
+                    texttemplate='%{y}',
+                    textposition='outside'
+                )
+
+                # garantir que labels 'outside' caibam: aumentar limite superior baseado na maior contagem
+                counts, _ = np.histogram(idades_validas.dropna(), bins=20)
+                max_count = int(counts.max()) if len(counts) > 0 else 1
+                fig_idades.update_yaxes(range=[0, max_count * 1.18], showticklabels=False)
+
+                fig_idades.update_layout(
+                    title="",
+                    xaxis_title="",
+                    yaxis_title="",
+                    height=250,
+                    showlegend=False,
+                    margin=dict(t=60, b=20, l=20, r=20),
+                    yaxis=dict(
+                        showticklabels=False,
+                        showgrid=False,
+                        zeroline=False
+                    ),
+                    xaxis=dict(
+                        showgrid=False,
+                    ),
+                    bargap=0.1
+                )
+
+                st.plotly_chart(fig_idades, use_container_width=True, key="grafico_idades_clientes")
+            else:
+                st.warning("Nenhuma idade válida encontrada")
+        else:
+            st.warning("Dados de idade não disponíveis")
+
+    with col_sexo:
+        st.markdown("Distribuição por Sexo")
+        if 'sexo' in df_analise.columns:
+            sexo_valido = df_analise[df_analise['sexo'].isin(['M', 'F'])]
+
+            if len(sexo_valido) > 0:
+                sexo_counts = sexo_valido['sexo'].value_counts()
+
+                # converter para gráfico de barras com porcentagens como rótulos
+                labels = ['Masculino' if x == 'M' else 'Feminino' for x in sexo_counts.index]
+                counts = sexo_counts.values
+                total = counts.sum() if len(counts) > 0 else 1
+                percents = [(v / total) * 100 for v in counts]
+                text_labels = [f"{p:.1f}%" for p in percents]
+
+                df_bar = pd.DataFrame({
+                    "sexo": labels,
+                    "count": counts,
+                    "percent_label": text_labels
+                })
+
+                fig_sexo = px.bar(
+                    df_bar,
+                    x="sexo",
+                    y="count",
+                    text="percent_label",
+                    color="sexo",
+                    color_discrete_map={'Masculino': "#0627cb", 'Feminino': "#d20bae"}
+                )
+
+                # evitar que a barra maior ultrapasse a borda: ajustar limite superior com folga
+                max_count = int(df_bar['count'].max()) if len(df_bar) > 0 else 1
+                upper = max((max_count * 1.18), (max_count + 1))  # folga mínima
+                # esconder os valores do eixo y (tick labels) e manter o range com folga
+                fig_sexo.update_yaxes(range=[0, upper], showticklabels=False)
+                
+
+                fig_sexo.update_traces(textposition="outside", showlegend=False)
+                fig_sexo.update_layout(
+                    title="",
+                    height=250,
+                    margin=dict(t=20, b=20, l=20, r=20),
+                    xaxis_title="",
+                    yaxis_title=""
+                )
+
+                st.plotly_chart(fig_sexo, use_container_width=True, key="grafico_sexo_clientes")
+            else:
+                st.warning("Nenhum dado válido de sexo (M/F)")
+        else:
+            st.warning("Dados de sexo não disponíveis")
+
+        with col_stats:
+            # conteúdo do antigo bloco de "Concentração" e "Resumo" foi movido
+            # para a barra horizontal acima dos gráficos (dinâmica, baseada em df_analise).
+            pass
