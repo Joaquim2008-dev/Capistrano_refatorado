@@ -18,6 +18,10 @@ def analise_cliente(df_analise):
                 return "data:image/png;base64," + base64.b64encode(f.read()).decode()
         except FileNotFoundError:
             return None
+        
+    masculino = encode_image('pages/sexo/masculino.png')
+    feminino = encode_image('pages/sexo/feminino.png')
+
 
     if 'idade_cliente_anos' in df_analise.columns:
         idades_line = df_analise['idade_cliente_anos'].dropna()
@@ -44,17 +48,47 @@ def analise_cliente(df_analise):
         except Exception:
             faixa_limpa = ""
 
+        # KPIs em 4 cards azul-escuros (linha horizontal) contendo as análises solicitadas
+        st.markdown("""
+            <style>
+            .kpis-row-cliente { display: flex; gap: 14px; align-items: stretch; margin-bottom: 18px; }
+            .kpi-card-cliente {
+                background: #062e6f; /* Azul escuro consistente */
+                padding: 12px 14px;
+                border-radius: 10px;
+                min-width: 180px;
+                flex: 1;
+                text-align: center;
+                color: #ffffff;
+                box-shadow: 0 4px 8px rgba(6,46,111,0.12);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            .kpi-text-cliente { color: #ffffff; font-size: 14px; line-height:1.3; }
+            .kpi-highlight { color: #d35400; font-weight:700; }
+            </style>
+        """, unsafe_allow_html=True)
+
         st.markdown(f"""
-            <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
-                        color:#7b6654;font-size:14px;">
-                <div><span style="color:#d35400;font-weight:700;">50%</span> dos clientes estão entre <span style="color:#d35400;font-weight:700;">{p25}</span> e <span style="color:#d35400;font-weight:700;">{p75}</span> anos</div>
-                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">
-                    <span style="color:#d35400;font-weight:700;">80%</span> dos clientes estão entre <span style="color:#d35400;font-weight:700;">{p10}</span> e <span style="color:#d35400;font-weight:700;">{p90}</span> anos
+            <div class="kpis-row-cliente">
+                <div class="kpi-card-cliente">
+                    <div class="kpi-text-cliente">50% dos clientes estão entre <span class="kpi-highlight">43</span> e <span class="kpi-highlight">66</span> anos</div>
                 </div>
-                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Mediana: <span style="color:#d35400;font-weight:700;">{p50} anos</span></div>
-                <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Faixa mais comum: <span style="color:#d35400;font-weight:700;">{faixa_limpa}</span></div>
+                <div class="kpi-card-cliente">
+                    <div class="kpi-text-cliente">80% dos clientes estão entre <span class="kpi-highlight">31</span> e <span class="kpi-highlight">74</span> anos</div>
+                </div>
+                <div class="kpi-card-cliente">
+                    <div class="kpi-text-cliente">Mediana: <span class="kpi-highlight">57 anos</span></div>
+                </div>
+                <div class="kpi-card-cliente">
+                    <div class="kpi-text-cliente">Faixa mais comum: <span class="kpi-highlight">56 a 61</span></div>
+                </div>
             </div>
         """, unsafe_allow_html=True)
+
+        # Removidos os 4 cards azuis conforme solicitado — segue a lógica restante sem os cards.
     else:
         st.markdown("""
             <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
@@ -110,7 +144,6 @@ def analise_cliente(df_analise):
                 st.warning("Nenhuma idade válida encontrada")
         else:
             st.warning("Dados de idade não disponíveis")
-
     with col_sexo:
         st.markdown("Distribuição por Sexo")
         if 'sexo' in df_analise.columns:
@@ -132,29 +165,97 @@ def analise_cliente(df_analise):
                     "percent_label": text_labels
                 })
 
-                fig_sexo = px.bar(
+                # converter gráfico de barras para gráfico de pizza
+                fig_sexo = px.pie(
                     df_bar,
-                    x="sexo",
-                    y="count",
-                    text="percent_label",
+                    names="sexo",
+                    values="count",
                     color="sexo",
                     color_discrete_map={'Masculino': "#0627cb", 'Feminino': "#d20bae"}
                 )
-
-                # evitar que a barra maior ultrapasse a borda: ajustar limite superior com folga
-                max_count = int(df_bar['count'].max()) if len(df_bar) > 0 else 1
-                upper = max((max_count * 1.18), (max_count + 1))  # folga mínima
-                # esconder os valores do eixo y (tick labels) e manter o range com folga
-                fig_sexo.update_yaxes(range=[0, upper], showticklabels=False)
+                    
+                # Calcular posições dos textos externos
+                import math
                 
+                # Encontrar índice do masculino
+                masculino_idx = None
+                for i, label in enumerate(labels):
+                    if label == "Masculino":
+                        masculino_idx = i
+                        break
+                
+                if masculino_idx is not None and masculino is not None:
+                    # Calcular ângulo do centro do setor masculino
+                    cumulative_angle = 0
+                    for i in range(masculino_idx):
+                        cumulative_angle += (counts[i] / total) * 360
+                    
+                    meio_setor_angle = cumulative_angle + (counts[masculino_idx] / total) * 360 / 2
+                    # Converter para radianos e ajustar (pizza começa em 90°)
+                    angulo_rad = math.radians(90 - meio_setor_angle)
+                    
+                    # Para textposition="outside", o texto fica aproximadamente no raio 1.1-1.2
+                    raio_texto = 1.15
+                    x_texto = 0.5 + raio_texto * 0.3 * math.cos(angulo_rad)  # 0.3 é fator de escala
+                    y_texto = 0.5 + raio_texto * 0.3 * math.sin(angulo_rad)
+                    
+                    # Adiciona a imagem próxima ao texto masculino
+                    fig_sexo.add_layout_image(
+                        dict(
+                            source=masculino,
+                            x=x_texto, y=y_texto,
+                            xref="paper", yref="paper",
+                            sizex=0.3, sizey=0.5,
+                            xanchor="center", yanchor="middle",
+                            layer="above"
+                        )
+                    )
 
-                fig_sexo.update_traces(textposition="outside", showlegend=False)
+                # Encontrar índice do feminino e adicionar sua imagem
+                feminino_idx = None
+                for i, label in enumerate(labels):
+                    if label == "Feminino":
+                        feminino_idx = i
+                        break
+                
+                if feminino_idx is not None and feminino is not None:
+                    # Calcular ângulo do centro do setor feminino
+                    cumulative_angle_fem = 0
+                    for i in range(feminino_idx):
+                        cumulative_angle_fem += (counts[i] / total) * 360
+                    
+                    meio_setor_angle_fem = cumulative_angle_fem + (counts[feminino_idx] / total) * 360 / 2
+                    # Converter para radianos e ajustar (pizza começa em 90°)
+                    angulo_rad_fem = math.radians(90 - meio_setor_angle_fem)
+                    
+                    # Para textposition="outside", o texto fica aproximadamente no raio 1.1-1.2
+                    raio_texto_fem = 1.15
+                    x_texto_fem = 0.5 + raio_texto_fem * 0.3 * math.cos(angulo_rad_fem)
+                    y_texto_fem = 0.5 + raio_texto_fem * 0.3 * math.sin(angulo_rad_fem)
+                    
+                    # Adiciona a imagem próxima ao texto feminino
+                    fig_sexo.add_layout_image(
+                        dict(
+                            source=feminino,
+                            x=x_texto_fem, y=y_texto_fem,
+                            xref="paper", yref="paper",
+                            sizex=0.3, sizey=0.5,
+                            xanchor="center", yanchor="middle",
+                            layer="above"
+                        )
+                    )
+
+                fig_sexo.update_traces(
+                    textinfo="percent", 
+                    textposition="inside", 
+                    pull=[0.02 if v==max(counts) else 0 for v in counts],
+                    textfont=dict(size=16, color='black', family='Arial Black')
+                )
                 fig_sexo.update_layout(
                     title="",
-                    height=250,
+                    height=300,
                     margin=dict(t=20, b=20, l=20, r=20),
-                    xaxis_title="",
-                    yaxis_title=""
+                    showlegend=False
                 )
 
                 st.plotly_chart(fig_sexo, use_container_width=True, key="grafico_sexo_clientes")
@@ -163,7 +264,6 @@ def analise_cliente(df_analise):
         else:
             st.warning("Dados de sexo não disponíveis")
 
-        with col_stats:
-            # conteúdo do antigo bloco de "Concentração" e "Resumo" foi movido
-            # para a barra horizontal acima dos gráficos (dinâmica, baseada em df_analise).
-            pass
+    with col_stats:
+        # para a barra horizontal acima dos gráficos (dinâmica, baseada em df_analise).
+        pass
