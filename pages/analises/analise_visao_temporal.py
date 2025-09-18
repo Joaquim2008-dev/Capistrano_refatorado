@@ -1,4 +1,3 @@
-# ...existing code...
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -75,52 +74,55 @@ def analise_temporal(df_analise, aplicar_filtro_configurado=None):
     line_rgba = "rgba(211,84,0,0.6)"    # linha no gráfico (transparente) - cor laranja
     label_rgba = "rgba(123,102,84,0.95)"  # barra/label acima do gráfico (mais opaco) - cor marrom
 
-    # CSS específico para KPIs da análise temporal
+    # CSS específico para KPIs da análise temporal - agora em 4 cards horizontais com azul escuro
     st.markdown("""
         <style>
-        .kpis-row-temporal { display: flex; gap: 18px; align-items: center; margin-bottom: 18px; }
-        .kpi-temporal {
-            background: transparent;
-            padding: 8px 12px;
-            border-radius: 6px;
+        .kpis-row-temporal { display: flex; gap: 14px; align-items: stretch; margin-bottom: 18px; }
+        .kpi-card-temporal {
+            background: #062e6f; /* Azul escuro consistente */
+            padding: 12px 14px;
+            border-radius: 10px;
             min-width: 160px;
+            flex: 1;
             text-align: center;
+            color: #ffffff;
+            box-shadow: 0 4px 8px rgba(6,46,111,0.12);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .kpi-title-temporal { color: #7b6654; font-size: 13px; margin-bottom: 6px; }
-        .kpi-value-temporal { color: #d35400; font-size: 18px; font-weight: 600; display: inline-block; vertical-align: middle; }
-        /* delta agora fica inline ao lado do valor */
+        .kpi-title-temporal { color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 6px; }
+        .kpi-value-temporal { color: #ffffff; font-size: 20px; font-weight: 700; }
         .kpi-delta-temporal { display: inline-block; margin-left: 8px; font-size: 13px; vertical-align: middle; }
         .delta-green-temporal { color: #4CAF50; font-weight:600; }
         .delta-red-temporal { color: #f44336; font-weight:600; }
-        .delta-neutral-temporal { color: #FFC107; font-weight:600; }
+        .delta-neutral-temporal { color: #FFC107; font-weight:600; color: #fff200; }
         </style>
     """, unsafe_allow_html=True)
 
     # montar o snippet do delta (agora inline)
     kpi_pico_extra = ""
     if mes_max:
-        kpi_pico_extra = f"<span class='kpi-delta-temporal {pico_class}'>em {mes_max}</span>"
+        kpi_pico_extra = f"<span class='kpi-delta-temporal {pico_class}'> em {mes_max}</span>"
 
     st.markdown(f"""
         <div class="kpis-row-temporal">
-            <div class="kpi-temporal">
+            <div class="kpi-card-temporal">
                 <div class="kpi-title-temporal">Total 12 meses</div>
                 <div class="kpi-value-temporal">{total_12_meses:,}</div>
             </div>
-            <div class="kpi-temporal">
+            <div class="kpi-card-temporal">
                 <div class="kpi-title-temporal">Média mensal</div>
                 <div class="kpi-value-temporal">{media_mensal_12m:.1f}</div>
             </div>
-            <div class="kpi-temporal">
+            <div class="kpi-card-temporal">
                 <div class="kpi-title-temporal">Pico mensal</div>
-                <div>
-                    <span class="kpi-value-temporal">{max_mes if max_mes is not None else 'N/A'}</span>
-                    {kpi_pico_extra}
-                </div>
+                <div class="kpi-value-temporal">{max_mes if max_mes is not None else 'N/A'}{kpi_pico_extra}</div>
             </div>
-            <div class="kpi-temporal">
-                <div class="kpi-title-temporal">Média/dia útil</div>
-                <div class="kpi-value-temporal">{media_dia_util:.1f}</div>
+            <div class="kpi-card-temporal">
+                <div class="kpi-title-temporal">Média / dia útil</div>
+                <div class="kpi-value-temporal">{f"{media_dia_util:.1f}" if media_dia_util is not None else 'N/A'}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)

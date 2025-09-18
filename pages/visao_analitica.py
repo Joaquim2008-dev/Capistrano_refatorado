@@ -137,7 +137,7 @@ def mostrar_kpis_principais(df_analise):
     st.markdown("""
         <style>
         .kpi-card {
-            background-color: #1E88E5;
+            background-color: #062e6f; /* Azul escuro (mesmo de Analise_visao_geral) */
             padding: 20px;
             border-radius: 10px;
             text-align: center;
@@ -148,7 +148,7 @@ def mostrar_kpis_principais(df_analise):
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .kpi-title {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.95);
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 8px;
