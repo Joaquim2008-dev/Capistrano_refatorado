@@ -28,4 +28,6 @@ var/
 wheels/
 *.egg-info/
 .installed.cfg
-*.egg
+*.egg.DS_Store
+__pycache__/
+*.pyc
