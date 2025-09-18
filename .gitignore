@@ -31,3 +31,10 @@ wheels/
 *.egg.DS_Store
 __pycache__/
 *.pyc
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+venv_stable/
