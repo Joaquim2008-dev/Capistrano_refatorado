@@ -15,51 +15,31 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
     st.markdown("""
         <style>
         .processo-card {
-            background-color: #1E88E5;
+            background-color: #062e6f;  /* Azul escuro */
             padding: 15px;
             border-radius: 10px;
             height: 200px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        /* período (ex.: "Último dia útil (12/09/2025)", "Semana Passada ...", "Este Mês") agora em cinza claro */
-        .processo-periodo {
-            color: #bdbdbd;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 12px;
-            line-height: 1.2;
-            min-height: 20px;
-        }
-        .processo-metricas {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 5px;
-            flex-grow: 1;
-            align-items: flex-start;
-        }
-        .processo-coluna {
-            text-align: center;
-            flex: 1;
-        }
-        /* labels (Geral, Previdenciário) em cinza claro */
         .processo-titulo {
-            color: #bdbdbd;
+            color: #e0e0e0;
             font-size: 13px;
             font-weight: 500;
             margin-bottom: 6px;
+            text-align: center;
         }
-        /* valores permanecem em branco */
         .processo-valor {
             color: white;
             font-size: 26px;
             font-weight: 700;
             margin-bottom: 4px;
             line-height: 1;
+            text-align: center;
         }
-        /* badge de média: fundo colorido, mas separar label (cinza) e valor (branco) */
         .processo-media {
             font-size: 13px;
             line-height: 1.4;
@@ -67,6 +47,7 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
             border-radius: 4px;
             display: inline-block;
             font-weight: 500;
+            text-align: center;
         }
         .processo-media .media-label { color: #bdbdbd; margin-right:6px; }
         .processo-media .media-value { color: #ffffff; font-weight:700; }
@@ -79,10 +60,19 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
         .media-amarela {
             background-color: #FFC107 !important;
         }
-        /* percentual previdenciárias: valor em branco + label em cinza ao lado */
-        .processo-percentual { text-align: center; margin-top: auto; padding-top: 5px; }
-        .processo-percentual .percent-value { color: #ffffff; font-weight:700; margin-right:6px; }
-        .processo-percentual .percent-label { color: #bdbdbd; }
+        .periodo-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .percentual-info {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -190,92 +180,94 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
         data_inicio_semana = inicio_semana.strftime('%d/%m')
         data_fim_semana = fim_semana.strftime('%d/%m')
         
-        # Layout dos Cards - 3 COLUNAS
-        col1, col2, col3 = st.columns(3)
-        
-        # CARD 1 - Último dia útil
-        with col1:
-            # Calcular percentual
-            perc_prev_dia = (processos_ultimo_dia_prev / processos_ultimo_dia_geral * 100) if processos_ultimo_dia_geral > 0 else 0
-            
-            # Determinar cores
-            cor_geral_dia = get_cor_media(processos_ultimo_dia_geral, media_diaria_geral)
-            cor_prev_dia = get_cor_media(processos_ultimo_dia_prev, media_diaria_prev)
-            
-            st.markdown(f"""
-                <div class="processo-card">
-                    <div class="processo-periodo">Último dia útil ({data_ultimo_dia})</div>
-                    <div class="processo-metricas">
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Geral</div>
-                            <div class="processo-valor">{processos_ultimo_dia_geral}</div>
-                            <div class="processo-media {cor_geral_dia}"><span class="media-label">Média:</span><span class="media-value">{media_diaria_geral:.1f}</span></div>
+        # Layout dos Cards - ÚNICA LINHA com 3 colunas (cada coluna = um período)
+        # Usar HTML/CSS para garantir que cada análise fique em uma única linha horizontal
+        st.markdown("""
+            <style>
+            .periodo-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .processos-row {
+                display: flex;
+                gap: 8px;
+                width: 100%;
+                justify-content: center;
+            }
+            .processo-card-inline {
+                background-color: #062e6f;
+                padding: 10px;
+                border-radius: 8px;
+                width: 48%;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            .processo-titulo { color: #e0e0e0; font-size:13px; font-weight:500; margin-bottom:6px; text-align:center; }
+            .processo-valor { color: white; font-size:22px; font-weight:700; margin-bottom:4px; text-align:center; }
+            .processo-media { font-size:12px; padding:3px 6px; border-radius:4px; color:#fff; font-weight:600; }
+            .percentual-inline { font-size:13px; color:#444; margin-top:6px; text-align:center; }
+            </style>
+        """, unsafe_allow_html=True)
+
+        periodos = [
+            {
+                "titulo": f"Último dia útil ({data_ultimo_dia})",
+                "geral_val": processos_ultimo_dia_geral,
+                "prev_val": processos_ultimo_dia_prev,
+                "media_geral": media_diaria_geral,
+                "media_prev": media_diaria_prev
+            },
+            {
+                "titulo": f"Semana Passada ({data_inicio_semana} a {data_fim_semana})",
+                "geral_val": processos_semana_geral,
+                "prev_val": processos_semana_prev,
+                "media_geral": media_semanal_geral,
+                "media_prev": media_semanal_prev
+            },
+            {
+                "titulo": "Este Mês",
+                "geral_val": processos_mes_geral,
+                "prev_val": processos_mes_prev,
+                "media_geral": media_mensal_geral,
+                "media_prev": media_mensal_prev
+            }
+        ]
+
+        cols = st.columns(3)
+        for i, periodo in enumerate(periodos):
+            with cols[i]:
+                # montar HTML inline para garantir única linha horizontal por análise
+                geral = periodo["geral_val"]
+                prev = periodo["prev_val"]
+                perc = (prev / geral * 100) if geral > 0 else 0
+
+                # determinar classes de cor para as médias (verde/vermelho/amarelo)
+                cor_media_geral = get_cor_media(periodo["geral_val"], periodo["media_geral"])
+                cor_media_prev = get_cor_media(periodo["prev_val"], periodo["media_prev"])
+
+                html = f'''
+                    <div class="periodo-container">
+                        <div class="periodo-title">{periodo["titulo"]}</div>
+                        <div class="processos-row">
+                            <div class="processo-card-inline">
+                                <div class="processo-titulo">Geral</div>
+                                <div class="processo-valor">{periodo["geral_val"]}</div>
+                                <div class="processo-media {cor_media_geral}">Média: {periodo["media_geral"]:.1f}</div>
+                            </div>
+                            <div class="processo-card-inline">
+                                <div class="processo-titulo">Previdenciário</div>
+                                <div class="processo-valor">{periodo["prev_val"]}</div>
+                                <div class="processo-media {cor_media_prev}">Média: {periodo["media_prev"]:.1f}</div>
+                            </div>
                         </div>
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Previdenciário</div>
-                            <div class="processo-valor">{processos_ultimo_dia_prev}</div>
-                            <div class="processo-media {cor_prev_dia}"><span class="media-label">Média:</span><span class="media-value">{media_diaria_prev:.1f}</span></div>
-                        </div>
+                        <div class="percentual-inline">🔍 {perc:.1f}% previdenciárias</div>
                     </div>
-                    <div class="processo-percentual"><span class="percent-value">🔍 {perc_prev_dia:.1f}%</span><span class="percent-label">previdenciárias</span></div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # CARD 2 - Semana Passada
-        with col2:
-            # Calcular percentual
-            perc_prev_semana = (processos_semana_prev / processos_semana_geral * 100) if processos_semana_geral > 0 else 0
-            
-            # Determinar cores
-            cor_geral_semana = get_cor_media(processos_semana_geral, media_semanal_geral)
-            cor_prev_semana = get_cor_media(processos_semana_prev, media_semanal_prev)
-            
-            st.markdown(f"""
-                <div class="processo-card">
-                    <div class="processo-periodo">Semana Passada ({data_inicio_semana} a {data_fim_semana})</div>
-                    <div class="processo-metricas">
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Geral</div>
-                            <div class="processo-valor">{processos_semana_geral}</div>
-                            <div class="processo-media {cor_geral_semana}"><span class="media-label">Média:</span><span class="media-value">{media_semanal_geral:.1f}</span></div>
-                        </div>
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Previdenciário</div>
-                            <div class="processo-valor">{processos_semana_prev}</div>
-                            <div class="processo-media {cor_prev_semana}"><span class="media-label">Média:</span><span class="media-value">{media_semanal_prev:.1f}</span></div>
-                        </div>
-                    </div>
-                    <div class="processo-percentual"><span class="percent-value">🔍 {perc_prev_semana:.1f}%</span><span class="percent-label">previdenciárias</span></div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # CARD 3 - Este Mês
-        with col3:
-            # Calcular percentual
-            perc_prev_mes = (processos_mes_prev / processos_mes_geral * 100) if processos_mes_geral > 0 else 0
-            
-            # Determinar cores
-            cor_geral_mes = get_cor_media(processos_mes_geral, media_mensal_geral)
-            cor_prev_mes = get_cor_media(processos_mes_prev, media_mensal_prev)
-            
-            st.markdown(f"""
-                <div class="processo-card">
-                    <div class="processo-periodo">Este Mês</div>
-                    <div class="processo-metricas">
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Geral</div>
-                            <div class="processo-valor">{processos_mes_geral}</div>
-                            <div class="processo-media {cor_geral_mes}"><span class="media-label">Média:</span><span class="media-value">{media_mensal_geral:.1f}</span></div>
-                        </div>
-                        <div class="processo-coluna">
-                            <div class="processo-titulo">Previdenciário</div>
-                            <div class="processo-valor">{processos_mes_prev}</div>
-                            <div class="processo-media {cor_prev_mes}"><span class="media-label">Média:</span><span class="media-value">{media_mensal_prev:.1f}</span></div>
-                        </div>
-                    </div>
-                    <div class="processo-percentual"><span class="percent-value">🔍 {perc_prev_mes:.1f}%</span><span class="percent-label">previdenciárias</span></div>
-                </div>
-            """, unsafe_allow_html=True)
+                '''
+                st.markdown(html, unsafe_allow_html=True)
     
     else:
         st.warning("⚠️ Dados de data não disponíveis para cálculo de KPIs")
