@@ -31,13 +31,34 @@ def analise_prospectors(df_analise, aplicar_filtro_configurado):
         com_prospector_12m = df_12_meses['prospector'].notna().sum()
         percentual_prospector_12m = (com_prospector_12m / total_12_meses * 100) if total_12_meses > 0 else 0
         
-        # KPIs formatados horizontalmente
+        # KPIs em 3 cards horizontais com fundo azul escuro
         st.markdown(f"""
-        <div style="padding:10px 16px;display:flex;align-items:center;gap:24px;
-                    color:#7b6654;font-size:14px;">
-            <div><span>Total 12 meses:</span> <span style="color:#d35400;font-weight:700;">{total_12_meses:,}</span></div>
-            <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">Com prospector: <span style="color:#d35400;font-weight:700;">{com_prospector_12m:,}</span></div>
-            <div style="border-left:1px solid rgba(123,102,84,0.12);padding-left:16px;">% com prospector: <span style="color:#d35400;font-weight:700;">{percentual_prospector_12m:.1f}%</span></div>
+        <style>
+        .kpi-row {{ display:flex; gap:16px; align-items:center; margin-bottom:12px; }}
+        .kpi-card {{
+          background: linear-gradient(180deg, #062a6a, #04214f);
+          color: #ffffff;
+          padding: 12px 18px;
+          border-radius: 8px;
+          box-shadow: 0 4px 10px rgba(2,6,23,0.35);
+          min-width: 180px;
+        }}
+        .kpi-label {{ font-size:13px; color: rgba(255,255,255,0.85); }}
+        .kpi-value {{ font-size:20px; font-weight:700; margin-top:6px; }}
+        </style>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-label">Total 12 meses</div>
+            <div class="kpi-value">{total_12_meses:,}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Com prospector</div>
+            <div class="kpi-value">{com_prospector_12m:,}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">% com prospector</div>
+            <div class="kpi-value">{percentual_prospector_12m:.1f}%</div>
+          </div>
         </div>
         """, unsafe_allow_html=True)
     else:
