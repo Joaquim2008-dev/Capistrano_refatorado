@@ -99,7 +99,10 @@ def analise_cliente(df_analise):
 
     col_idade, col_sexo, col_stats = st.columns([2, 2, 1])
 
+
     with col_idade:
+    
+          
         st.markdown(" Distribuição de Idades")
         if 'idade_cliente_anos' in df_analise.columns:
             # incluir a coluna 'sexo' em idades_validas (manter linhas com idade válida)
@@ -107,11 +110,8 @@ def analise_cliente(df_analise):
 
             if len(idades_validas) > 0:
                 # botão tipo "pills" para filtrar por sexo: Masculino / Feminino / Ambos
-                try:
-                    opcao_sexo = st.pills(["Masculino", "Feminino", "Ambos"], index=2, key="pills_sexo_idades")
-                except Exception:
-                    # fallback para caso st.pills não exista (compatibilidade)
-                    opcao_sexo = st.radio("Sexo:", ["Masculino", "Feminino", "Ambos"], index=2, key="radio_sexo_idades")
+    
+                opcao_sexo = st.radio(label='Por sexo', options=["Masculino", "Feminino", "Ambos"], index=2, horizontal=True, key="radio_sexo_idades")
 
                 # mapear seleção para filtro no dataframe (coluna sexo usa 'M'/'F')
                 if opcao_sexo == "Masculino":
@@ -287,3 +287,10 @@ def analise_cliente(df_analise):
     with col_stats:
         # para a barra horizontal acima dos gráficos (dinâmica, baseada em df_analise).
         pass
+
+    st.markdown("""
+    <style>
+    /* Forçar layout em linha: pode necessitar ajustar o seletor conforme a versão do Streamlit */
+    div[role="list"] { display:flex !important; gap:8px !important; flex-direction:row !important; }
+    </style>
+    """, unsafe_allow_html=True)
