@@ -102,44 +102,64 @@ def analise_cliente(df_analise):
     with col_idade:
         st.markdown(" Distribuição de Idades")
         if 'idade_cliente_anos' in df_analise.columns:
-            idades_validas = df_analise['idade_cliente_anos'].dropna()
+            # incluir a coluna 'sexo' em idades_validas (manter linhas com idade válida)
+            idades_validas = df_analise[['idade_cliente_anos', 'sexo']].dropna(subset=['idade_cliente_anos']).copy()
 
             if len(idades_validas) > 0:
-                fig_idades = px.histogram(
-                    x=idades_validas,
-                    nbins=20,
-                    color_discrete_sequence=['steelblue']
-                )
+                # botão tipo "pills" para filtrar por sexo: Masculino / Feminino / Ambos
+                try:
+                    opcao_sexo = st.pills(["Masculino", "Feminino", "Ambos"], index=2, key="pills_sexo_idades")
+                except Exception:
+                    # fallback para caso st.pills não exista (compatibilidade)
+                    opcao_sexo = st.radio("Sexo:", ["Masculino", "Feminino", "Ambos"], index=2, key="radio_sexo_idades")
 
-                fig_idades.update_traces(
-                    texttemplate='%{y}',
-                    textposition='outside'
-                )
+                # mapear seleção para filtro no dataframe (coluna sexo usa 'M'/'F')
+                if opcao_sexo == "Masculino":
+                    idades_filtradas = idades_validas[idades_validas['sexo'] == 'M']
+                elif opcao_sexo == "Feminino":
+                    idades_filtradas = idades_validas[idades_validas['sexo'] == 'F']
+                else:
+                    idades_filtradas = idades_validas
 
-                # garantir que labels 'outside' caibam: aumentar limite superior baseado na maior contagem
-                counts, _ = np.histogram(idades_validas.dropna(), bins=20)
-                max_count = int(counts.max()) if len(counts) > 0 else 1
-                fig_idades.update_yaxes(range=[0, max_count * 1.18], showticklabels=False)
+                if len(idades_filtradas) == 0:
+                    st.warning("Nenhuma idade válida encontrada para o filtro selecionado")
+                else:
+                    fig_idades = px.histogram(
+                        idades_filtradas,
+                        x='idade_cliente_anos',
+                        nbins=20,
+                        color_discrete_sequence=['steelblue']
+                    )
 
-                fig_idades.update_layout(
-                    title="",
-                    xaxis_title="",
-                    yaxis_title="",
-                    height=250,
-                    showlegend=False,
-                    margin=dict(t=60, b=20, l=20, r=20),
-                    yaxis=dict(
-                        showticklabels=False,
-                        showgrid=False,
-                        zeroline=False
-                    ),
-                    xaxis=dict(
-                        showgrid=False,
-                    ),
-                    bargap=0.1
-                )
+                    fig_idades.update_traces(
+                        texttemplate='%{y}',
+                        textposition='outside'
+                    )
 
-                st.plotly_chart(fig_idades, use_container_width=True, key="grafico_idades_clientes")
+                    # garantir que labels 'outside' caibam: aumentar limite superior baseado na maior contagem
+                    counts, _ = np.histogram(idades_filtradas['idade_cliente_anos'].dropna(), bins=20)
+                    max_count = int(counts.max()) if len(counts) > 0 else 1
+                    fig_idades.update_yaxes(range=[0, max_count * 1.18], showticklabels=False)
+
+                    fig_idades.update_layout(
+                        title="",
+                        xaxis_title="",
+                        yaxis_title="",
+                        height=250,
+                        showlegend=False,
+                        margin=dict(t=60, b=20, l=20, r=20),
+                        yaxis=dict(
+                            showticklabels=False,
+                            showgrid=False,
+                            zeroline=False
+                        ),
+                        xaxis=dict(
+                            showgrid=False,
+                        ),
+                        bargap=0.1
+                    )
+
+                    st.plotly_chart(fig_idades, use_container_width=True, key="grafico_idades_clientes")
             else:
                 st.warning("Nenhuma idade válida encontrada")
         else:
