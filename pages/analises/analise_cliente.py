@@ -287,10 +287,3 @@ def analise_cliente(df_analise):
     with col_stats:
         # para a barra horizontal acima dos gráficos (dinâmica, baseada em df_analise).
         pass
-
-    st.markdown("""
-    <style>
-    /* Forçar layout em linha: pode necessitar ajustar o seletor conforme a versão do Streamlit */
-    div[role="list"] { display:flex !important; gap:8px !important; flex-direction:row !important; }
-    </style>
-    """, unsafe_allow_html=True)
