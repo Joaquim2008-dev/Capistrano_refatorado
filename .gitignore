@@ -1,6 +1,5 @@
 Arquivos/
 ANÁLISE PRÉVIA DE NEGÓCIO.docx
-.streamlit/
 .streamlit/secrets.toml
 cache/
 dados_geograficos/
