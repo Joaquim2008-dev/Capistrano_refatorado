@@ -1,35 +1,38 @@
+import streamlit as st
+import pandas as pd
 
 def mostrar_kpis_principais(df_analise):
     """Mostra KPIs principais com cards customizados"""
     # APLICAR FILTRO AQUI TAMBÉM
-    df_analise = aplicar_filtro_configurado(df_analise)
 
-    # CSS para os cards
+    # CSS para os cards (fonte reduzida)
     st.markdown("""
         <style>
         .kpi-card {
-            background-color: #1E88E5;
-            padding: 20px;
-            border-radius: 10px;
+            background-color: #062e6f;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
-            height: 120px;
+            height: 96px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            font-family: inherit;
+            font-size: 12px;
         }
         .kpi-title {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .kpi-value {
             color: white;
-            font-size: 28px;
+            font-size: 18px;
             font-weight: 700;
             margin: 0;
         }
@@ -104,33 +107,5 @@ def mostrar_kpis_principais(df_analise):
         """, unsafe_allow_html=True)
 
 
-    # Adicionar espaço entre KPIs e abas
-    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Abas - VOLTAR PARA O PADRÃO SIMPLES
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📊 Visão Geral",
-        "📈 Análise Temporal", 
-        "⚖️ Réus & Competência", 
-        "👥 Perfil dos Clientes", 
-        "💼 Profissões",
-        "🎯 Prospectores"
-    ])
-
-    with tab1:
-        visao_geral(df_filtrado, aplicar_filtro_configurado)
     
-    with tab2:
-        analise_temporal(df_filtrado)
-    
-    with tab3:
-        analise_reus_procedencia(df_filtrado)
-    
-    with tab4:
-        analise_cliente(df_filtrado)
-    
-    with tab5:
-        analise_profissoes(df_filtrado, aplicar_filtro_configurado)
-    
-    with tab6:
-        analise_prospectors(df_filtrado, aplicar_filtro_configurado)

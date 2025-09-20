@@ -383,7 +383,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-# compatibilidade: expor função esperada por outros módulos sem executar nada ao importar
-# evita ImportError: cannot import name 'pagina_visao_analitica'
-pagina_visao_analitica = main
-

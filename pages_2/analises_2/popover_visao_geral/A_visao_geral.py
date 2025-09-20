@@ -2,15 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
+def visao_geral_6(df_filtrado):
 
-def visao_geral(df_filtrado, aplicar_filtro_configurado):
-    """Visão geral com KPIs principais e últimos processos - COM FILTRO APLICADO"""
-    # APLICAR FILTRO AQUI TAMBÉM
-    df_filtrado = aplicar_filtro_configurado(df_filtrado)
-        
-    # KPIs de novos processos - AGORA COMO MARKDOWN
-    st.markdown("#### Novos Processos")
-    
     # CSS para os novos cards
     st.markdown("""
         <style>
@@ -61,7 +54,7 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
             background-color: #FFC107 !important;
         }
         .periodo-title {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
             text-align: center;
@@ -271,84 +264,3 @@ def visao_geral(df_filtrado, aplicar_filtro_configurado):
     
     else:
         st.warning("⚠️ Dados de data não disponíveis para cálculo de KPIs")
-
-    # Tabela dos últimos 5 processos
-    st.markdown("---")
-    st.markdown("### 📋 Últimos 5 Processos")
-    
-    if len(df_filtrado) > 0:
-        # Ordenar por data (mais recentes primeiro)
-        if 'data_convertida' in df_filtrado.columns:
-            df_recentes = df_filtrado.sort_values('data_convertida', ascending=False).head(5)
-        else:
-            df_recentes = df_filtrado.head(5)
-        
-        # Preparar dados para a tabela
-        tabela_processos = []
-        
-        for _, row in df_recentes.iterrows():
-            # Número do processo
-            num_processo = row.get('numeroProcesso', row.get('numero', 'N/A'))
-            
-            # Data formatada
-            if 'data_convertida' in row and pd.notna(row['data_convertida']):
-                data_formatada = row['data_convertida'].strftime('%d/%m/%Y')
-            else:
-                data_formatada = 'N/A'
-            
-            # Nome do cliente
-            nome_cliente = row.get('nome', row.get('nomeCliente', 'N/A'))
-            if pd.notna(nome_cliente) and len(str(nome_cliente)) > 30:
-                nome_cliente = str(nome_cliente)[:27] + "..."
-            
-            # MUDANÇA: usar tipoProcesso ao invés de tipoPrincipal
-            tipo_processo = row.get('tipoProcesso', 'N/A')
-            
-            # Cidade
-            cidade = row.get('cidade_upper', row.get('cidade', 'N/A'))
-            if pd.notna(cidade) and len(str(cidade)) > 20:
-                cidade = str(cidade)[:17] + "..."
-            
-            tabela_processos.append({
-                'Nº Processo': num_processo,
-                'Data': data_formatada,
-                'Cliente': nome_cliente,
-                'Tipo': tipo_processo,  # Agora usando tipoProcesso
-                'Cidade': cidade
-            })
-        
-        # Criar DataFrame
-        df_tabela = pd.DataFrame(tabela_processos)
-        
-        # Exibir tabela
-        st.dataframe(
-            df_tabela,
-            use_container_width=True,
-            hide_index=True,
-            height=220,
-            column_config={
-                "Nº Processo": st.column_config.TextColumn(
-                    "Nº Processo",
-                    help="Número do processo"
-                ),
-                "Data": st.column_config.TextColumn(
-                    "Data",
-                    help="Data de registro"
-                ),
-                "Cliente": st.column_config.TextColumn(
-                    "Cliente",
-                    help="Nome do cliente"
-                ),
-                "Tipo": st.column_config.TextColumn(
-                    "Tipo do Processo",
-                    help="Tipo original do processo"
-                ),
-                "Cidade": st.column_config.TextColumn(
-                    "Cidade",
-                    help="Cidade do cliente"
-                )
-            }
-        )
-                   
-    else:
-        st.warning("⚠️ Nenhum processo encontrado com os filtros aplicados")
